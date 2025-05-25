@@ -29,7 +29,7 @@ if (process.env.NODE_ENV === 'production') {
     app.use(cors(corsOptions));
 } else {
     const corsOptions = {
-        origin: ['http://127.0.0.1:5173', 'http://localhost:5173', 'http://localhost:3000'],
+        origin: ['http://127.0.0.1:5174', 'http://localhost:5174', 'http://localhost:3000'],
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization']
@@ -37,12 +37,18 @@ if (process.env.NODE_ENV === 'production') {
     app.use(cors(corsOptions));
 }
 
+const reportRoutes = require('./api/report/report.routes')
+const authRoutes = require('./api/auth/auth.routes')
+const userRoutes = require('./api/user/user.routes')
 
-// Enable pre-flight across-the-board
 
-// const setupAsyncLocalStorage = require('./middlewares/setupAls.middleware')
+app.use('/api/report', reportRoutes)
+app.use('/api/auth', authRoutes)
+app.use('/api/user', userRoutes)
+
+const setupAsyncLocalStorage = require('./middlewares/setupAls.middleware')
 app.all('*', setupAsyncLocalStorage)
-// const { setupSocketAPI } = require('./services/socket.service')
+const { setupSocketAPI } = require('./services/socket.service')
 
 
 // Socket.IO configuration

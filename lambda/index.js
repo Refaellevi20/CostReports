@@ -1,5 +1,5 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -22,8 +22,7 @@ exports.handler = async (event) => {
     };
 
     try {
-        const path = event.path;
-        const method = event.httpMethod;
+        const { path, method } = event;
 
         // Add health check endpoint
         if (path === '/api/health' && method === 'GET') {
@@ -135,7 +134,30 @@ exports.handler = async (event) => {
             };
         }
 
+        // User endpoints
+        if (path === '/api/users' && method === 'POST') {
+            const user = JSON.parse(event.body);
+            await docClient.send(new PutCommand({
+                TableName: 'Users',
+                Item: {
+                    userId: uuidv4(),
+                    email: user.email,
+                    name: user.name,
+                    createdAt: new Date().toISOString()
+                }
+            }));
+
+            return {
+                statusCode: 201,
+                headers,
+                body: JSON.stringify({ message: 'User created successfully' })
+            };
+        }
+
+        // Cost reports endpoints
         if (path === '/api/costs' && method === 'GET') {
+            const userId = event.queryStringParameters?.userId;
+            
             // Get dates for last 7 days
             const endDate = new Date().toISOString().split('T')[0];
             const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -152,25 +174,44 @@ exports.handler = async (event) => {
 
             const costData = await costExplorerClient.send(costCommand);
 
-            // Save to DynamoDB - Updated table name to CostReports
+            // Save to DynamoDB with user association
             const timestamp = new Date().toISOString();
             await docClient.send(new PutCommand({
-                TableName: 'CostReports', // Changed from 'costs' to 'CostReports'
+                TableName: 'CostReports',
                 Item: {
                     id: `cost_${timestamp}`,
+                    userId: userId || 'system',  // Associate with user if provided
+                    timestamp,
                     startDate,
                     endDate,
-                    timestamp,
                     costData: costData.ResultsByTime
                 }
             }));
+
+            // Query reports for specific user if provided
+            let reports;
+            if (userId) {
+                const { Items } = await docClient.send(new QueryCommand({
+                    TableName: 'CostReports',
+                    IndexName: 'UserReportsIndex',
+                    KeyConditionExpression: 'userId = :userId',
+                    ExpressionAttributeValues: {
+                        ':userId': userId
+                    },
+                    ScanIndexForward: false,  // Latest first
+                    Limit: 7
+                }));
+                reports = Items;
+            } else {
+                reports = costData.ResultsByTime;
+            }
 
             return {
                 statusCode: 200,
                 headers,
                 body: JSON.stringify({
                     message: 'Cost data retrieved and saved successfully',
-                    data: costData.ResultsByTime
+                    data: reports
                 })
             };
         }

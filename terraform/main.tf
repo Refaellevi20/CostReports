@@ -30,23 +30,73 @@ resource "aws_iam_role_policy" "lambda_policy" {
         Effect = "Allow"
         Action = [
           "ce:GetCostAndUsage",
-          "dynamodb:PutItem"
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:Query",
+          "dynamodb:Scan",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem"
         ]
-        Resource = "*"
+        Resource = [
+          aws_dynamodb_table.users.arn,
+          aws_dynamodb_table.cost_reports.arn,
+          "${aws_dynamodb_table.users.arn}/index/*",
+          "${aws_dynamodb_table.cost_reports.arn}/index/*"
+        ]
       }
     ]
   })
 }
 
-# DynamoDB Table
+# DynamoDB Tables
+resource "aws_dynamodb_table" "users" {
+  name           = "Users"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "userId"
+
+  attribute {
+    name = "userId"
+    type = "S"
+  }
+
+  attribute {
+    name = "email"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name               = "EmailIndex"
+    hash_key           = "email"
+    projection_type    = "ALL"
+  }
+}
+
 resource "aws_dynamodb_table" "cost_reports" {
   name           = "CostReports"
   billing_mode   = "PAY_PER_REQUEST"
   hash_key       = "id"
+  range_key      = "timestamp"  # Added for time-series data
 
   attribute {
     name = "id"
     type = "S"
+  }
+
+  attribute {
+    name = "timestamp"
+    type = "S"
+  }
+
+  attribute {
+    name = "userId"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name               = "UserReportsIndex"
+    hash_key           = "userId"
+    range_key         = "timestamp"
+    projection_type    = "ALL"
   }
 }
 

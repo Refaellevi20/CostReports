@@ -46,14 +46,24 @@ async function testDeployment() {
         console.log('Last Modified:', lambdaResponse.Configuration.LastModified);
         console.log();
 
-        // Test 2: Check DynamoDB Table
-        console.log('Testing DynamoDB Table...');
-        const tableData = await docClient.send(new ScanCommand({
+        // Test 2: Check DynamoDB Tables
+        console.log('Testing DynamoDB Tables...');
+        
+        // Check Users table
+        const usersData = await docClient.send(new ScanCommand({
+            TableName: 'Users',
+            Limit: 1
+        }));
+        console.log('✅ Users table exists and is accessible');
+        console.log('Users count:', usersData.Count);
+        
+        // Check CostReports table
+        const reportsData = await docClient.send(new ScanCommand({
             TableName: 'CostReports',
             Limit: 1
         }));
-        console.log('✅ DynamoDB Table exists and is accessible');
-        console.log('Sample data count:', tableData.Count);
+        console.log('✅ CostReports table exists and is accessible');
+        console.log('Reports count:', reportsData.Count);
         console.log();
 
         // Test 3: Check CloudWatch Event Rule
