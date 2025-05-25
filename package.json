@@ -17,20 +17,21 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
     "deploy:docker": "node scripts/deploy-docker.js",
-    "setup:cost-reports": "node scripts/setup-cost-reports.js"
-
+    "setup:cost-reports": "node scripts/setup-cost-reports.js",
+    "test:deployment": "node scripts/test-deployment.js"
   },
   "author": "Me",
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-api-gateway": "^3.485.0",
+    "@aws-sdk/client-cloudwatch-events": "^3.817.0",
     "@aws-sdk/client-cost-explorer": "^3.817.0",
     "@aws-sdk/client-dynamodb": "^3.817.0",
     "@aws-sdk/client-eventbridge": "^3.817.0",
     "@aws-sdk/client-iam": "^3.817.0",
-    "@aws-sdk/client-lambda": "^3.485.0",
+    "@aws-sdk/client-lambda": "^3.817.0",
     "@aws-sdk/client-s3": "^3.485.0",
-    "@aws-sdk/lib-dynamodb": "^3.485.0",
+    "@aws-sdk/lib-dynamodb": "^3.817.0",
     "archiver": "^7.0.1",
     "axios": "^1.7.9",
     "bcryptjs": "^3.0.2",
